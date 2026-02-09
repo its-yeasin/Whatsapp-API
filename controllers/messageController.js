@@ -20,7 +20,7 @@ exports.sendMessage = async (req, res) => {
     // Clean phone number
     const cleanPhone = phoneNumber.replace(/\D/g, "");
 
-    // Create message in Firebase
+    // Create message in Firebase with timeout
     const messagesRef = getMessagesRef();
     const newMessageRef = messagesRef.push();
 
@@ -32,25 +32,17 @@ exports.sendMessage = async (req, res) => {
       source: "api",
     };
 
-    await newMessageRef.set(messageData);
-
-    // Listen for status updates (optional - for immediate feedback)
-    const statusPromise = new Promise((resolve) => {
-      const timeout = setTimeout(() => {
-        newMessageRef.off("value");
-        resolve({ status: "queued", timeout: true });
-      }, 5000);
-
-      newMessageRef.on("value", (snapshot) => {
-        const data = snapshot.val();
-        if (data && data.status !== "pending") {
-          clearTimeout(timeout);
-          newMessageRef.off("value");
-          resolve(data);
-        }
-      });
+    // Add timeout to Firebase write operation
+    const writeTimeout = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Firebase write timeout')), 10000); // 10 second timeout
     });
 
+    await Promise.race([
+      newMessageRef.set(messageData),
+      writeTimeout
+    ]);
+
+    // Send immediate response - don't wait for status updates
     res.status(201).json({
       success: true,
       message: "Message queued successfully",
@@ -63,9 +55,11 @@ exports.sendMessage = async (req, res) => {
     });
   } catch (error) {
     console.error("Error sending message:", error);
+    console.error("Error stack:", error.stack);
     res.status(500).json({
       success: false,
       error: error.message || "Failed to send message",
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 };
