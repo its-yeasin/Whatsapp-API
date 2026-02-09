@@ -6,29 +6,33 @@ const { getMessagesRef } = require("../config/firebase");
  */
 async function writeToFirebaseWithRetry(ref, data, messageId) {
   const maxRetries = 3;
-  
+
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       // 5 second timeout per attempt
       const writeTimeout = new Promise((_, reject) => {
-        setTimeout(
-          () => reject(new Error("Write timeout")),
-          5000
-        );
+        setTimeout(() => reject(new Error("Write timeout")), 5000);
       });
 
       await Promise.race([ref.set(data), writeTimeout]);
-      
+
       console.log(`✅ Message ${messageId} written to Firebase successfully`);
       return true;
     } catch (error) {
-      console.error(`❌ Firebase write attempt ${attempt + 1}/${maxRetries + 1} failed:`, error.message);
-      
+      console.error(
+        `❌ Firebase write attempt ${attempt + 1}/${maxRetries + 1} failed:`,
+        error.message,
+      );
+
       if (attempt < maxRetries) {
         // Wait before retry (exponential backoff)
-        await new Promise((resolve) => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+        await new Promise((resolve) =>
+          setTimeout(resolve, Math.pow(2, attempt) * 1000),
+        );
       } else {
-        console.error(`❌ All retries exhausted for message ${messageId}. Firebase may be unreachable.`);
+        console.error(
+          `❌ All retries exhausted for message ${messageId}. Firebase may be unreachable.`,
+        );
         console.error(`   Data:`, JSON.stringify(data));
         // TODO: Implement fallback strategy (e.g., write to local queue/database)
         return false;
