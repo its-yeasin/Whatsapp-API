@@ -1,0 +1,17 @@
+# SSL Certificates Directory
+
+Place your SSL certificate files here:
+
+- `cert.pem` - Your SSL certificate (fullchain)
+- `key.pem` - Your private key
+
+## Generate with Let's Encrypt
+
+```bash
+sudo certbot certonly --standalone -d your-domain.com
+sudo cp /etc/letsencrypt/live/your-domain.com/fullchain.pem ./cert.pem
+sudo cp /etc/letsencrypt/live/your-domain.com/privkey.pem ./key.pem
+sudo chmod 644 *.pem
+```
+
+**Note:** These files are gitignored for security.
