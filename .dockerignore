@@ -5,7 +5,11 @@ npm-debug.log
 .env
 .env.local
 .env.*.local
-*.md
+README.md
+SETUP.md
+DEPLOYMENT.md
+QUICKSTART.md
+SSL-SETUP.md
 .DS_Store
 .vscode
 .idea
@@ -17,3 +21,6 @@ build
 *.pem
 debug.sh
 test-api.http
+
+# Keep package-lock.json for faster builds
+!package-lock.json
