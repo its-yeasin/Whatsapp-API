@@ -77,7 +77,7 @@ exports.sendMessage = async (req, res) => {
       data: {
         messageId: messageId,
         phoneNumber: messageData.phoneNumber,
-        status: \"pending\",
+        status: "pending",
         createdAt: messageData.createdAt,
       },
     });
