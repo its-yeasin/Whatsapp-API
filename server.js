@@ -6,7 +6,11 @@ const rateLimit = require("express-rate-limit");
 
 const messageRoutes = require("./routes/messageRoutes");
 const statsRoutes = require("./routes/statsRoutes");
-const { initializeFirebase, testConnection, getDatabase } = require("./config/firebase");
+const {
+  initializeFirebase,
+  testConnection,
+  getDatabase,
+} = require("./config/firebase");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -68,7 +72,7 @@ app.get("/health", async (req, res) => {
   try {
     // Check Firebase connection
     const isConnected = await testConnection();
-    
+
     res.json({
       success: true,
       status: "healthy",
@@ -76,8 +80,8 @@ app.get("/health", async (req, res) => {
       timestamp: new Date().toISOString(),
       firebase: {
         connected: isConnected,
-        status: isConnected ? "online" : "offline"
-      }
+        status: isConnected ? "online" : "offline",
+      },
     });
   } catch (error) {
     res.status(503).json({
@@ -88,8 +92,8 @@ app.get("/health", async (req, res) => {
       firebase: {
         connected: false,
         status: "error",
-        error: error.message
-      }
+        error: error.message,
+      },
     });
   }
 });

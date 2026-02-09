@@ -28,22 +28,24 @@ function initializeFirebase() {
     });
 
     database = admin.database();
-    
+
     // Enable connection persistence and set timeouts
     database.goOnline();
-    
+
     console.log("✅ Firebase initialized successfully");
     initAttempts = 0;
   } catch (error) {
     console.error("❌ Error initializing Firebase:", error.message);
     initAttempts++;
-    
+
     if (initAttempts < MAX_INIT_ATTEMPTS) {
-      console.log(`🔄 Retrying Firebase initialization (attempt ${initAttempts + 1}/${MAX_INIT_ATTEMPTS})...`);
+      console.log(
+        `🔄 Retrying Firebase initialization (attempt ${initAttempts + 1}/${MAX_INIT_ATTEMPTS})...`,
+      );
       setTimeout(() => initializeFirebase(), 2000);
       return;
     }
-    
+
     console.error(
       "Make sure serviceAccountKey.json exists and FIREBASE_DATABASE_URL is correct",
     );
