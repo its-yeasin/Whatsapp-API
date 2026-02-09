@@ -6,13 +6,27 @@ const rateLimit = require("express-rate-limit");
 
 const messageRoutes = require("./routes/messageRoutes");
 const statsRoutes = require("./routes/statsRoutes");
-const { initializeFirebase } = require("./config/firebase");
+const { initializeFirebase, testConnection, getDatabase } = require("./config/firebase");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Initialize Firebase
 initializeFirebase();
+
+// Give Firebase a moment to initialize
+setTimeout(async () => {
+  try {
+    const isConnected = await testConnection();
+    if (isConnected) {
+      console.log("🔥 Firebase connection verified");
+    } else {
+      console.warn("⚠️ Firebase connection may be unstable");
+    }
+  } catch (error) {
+    console.error("⚠️ Firebase connection test failed:", error.message);
+  }
+}, 1000);
 
 // Security Middleware
 app.use(helmet());
@@ -50,13 +64,34 @@ app.get("/", (req, res) => {
   });
 });
 
-app.get("/health", (req, res) => {
-  res.json({
-    success: true,
-    status: "healthy",
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString(),
-  });
+app.get("/health", async (req, res) => {
+  try {
+    // Check Firebase connection
+    const isConnected = await testConnection();
+    
+    res.json({
+      success: true,
+      status: "healthy",
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+      firebase: {
+        connected: isConnected,
+        status: isConnected ? "online" : "offline"
+      }
+    });
+  } catch (error) {
+    res.status(503).json({
+      success: false,
+      status: "unhealthy",
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+      firebase: {
+        connected: false,
+        status: "error",
+        error: error.message
+      }
+    });
+  }
 });
 
 // API Routes

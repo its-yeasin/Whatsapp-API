@@ -20,7 +20,7 @@ exports.sendMessage = async (req, res) => {
     // Clean phone number
     const cleanPhone = phoneNumber.replace(/\D/g, "");
 
-    // Create message in Firebase with timeout
+    // Create message in Firebase with timeout and retry logic
     const messagesRef = getMessagesRef();
     const newMessageRef = messagesRef.push();
 
@@ -32,15 +32,34 @@ exports.sendMessage = async (req, res) => {
       source: "api",
     };
 
-    // Add timeout to Firebase write operation
-    const writeTimeout = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Firebase write timeout')), 10000); // 10 second timeout
-    });
+    // Retry logic for Firebase write
+    let lastError;
+    const maxRetries = 2;
+    
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        // Add timeout to Firebase write operation (30 seconds)
+        const writeTimeout = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Firebase write timeout - check network connectivity')), 30000);
+        });
 
-    await Promise.race([
-      newMessageRef.set(messageData),
-      writeTimeout
-    ]);
+        await Promise.race([
+          newMessageRef.set(messageData),
+          writeTimeout
+        ]);
+        
+        // Success - break retry loop
+        break;
+      } catch (error) {
+        lastError = error;
+        if (attempt < maxRetries) {
+          console.log(`⚠️ Write attempt ${attempt + 1} failed, retrying...`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } else {
+          throw error;
+        }
+      }
+    }
 
     // Send immediate response - don't wait for status updates
     res.status(201).json({
