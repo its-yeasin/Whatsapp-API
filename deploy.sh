@@ -50,7 +50,8 @@ if docker-compose ps | grep -q "Up"; then
     # Test health endpoint
     echo "🏥 Testing health endpoint..."
     sleep 3
-    if curl -f http://localhost:3000/health > /dev/null 2>&1; then
+    PORT=${PORT:-3019}
+    if curl -f http://localhost:$PORT/health > /dev/null 2>&1; then
         echo -e "${GREEN}✅ Health check passed!${NC}"
     else
         echo -e "${YELLOW}⚠️  Health check failed. Check logs with: docker-compose logs${NC}"
@@ -74,6 +75,6 @@ echo "  Stop:            docker-compose stop"
 echo "  Remove:          docker-compose down"
 echo ""
 echo "🌐 API endpoints:"
-echo "  Health:          http://localhost:3000/health"
-echo "  Send Message:    http://localhost:3000/api/messages/send"
+echo "  Health:          http://localhost:${PORT:-3019}/health"
+echo "  Send Message:    http://localhost:${PORT:-3019}/api/messages/send"
 echo ""

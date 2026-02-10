@@ -10,6 +10,13 @@ if (process.env.API_KEY) {
 }
 
 /**
+ * @route   GET /api/messages
+ * @desc    Get all messages with optional filters
+ * @access  Public (or Protected with API key)
+ */
+router.get("/", messageController.getAllMessages);
+
+/**
  * @route   POST /api/messages/send
  * @desc    Send a single WhatsApp message
  * @access  Public (or Protected with API key)
@@ -61,27 +68,6 @@ router.post(
 );
 
 /**
- * @route   GET /api/messages/:messageId
- * @desc    Get status of a specific message
- * @access  Public (or Protected with API key)
- */
-router.get("/:messageId", messageController.getMessageStatus);
-
-/**
- * @route   GET /api/messages
- * @desc    Get all messages with optional filters
- * @access  Public (or Protected with API key)
- */
-router.get("/", messageController.getAllMessages);
-
-/**
- * @route   DELETE /api/messages/:messageId
- * @desc    Delete a specific message
- * @access  Public (or Protected with API key)
- */
-router.delete("/:messageId", messageController.deleteMessage);
-
-/**
  * @route   POST /api/messages/cleanup
  * @desc    Clean up old messages
  * @access  Public (or Protected with API key)
@@ -96,5 +82,19 @@ router.post(
   ],
   messageController.cleanupOldMessages,
 );
+
+/**
+ * @route   GET /api/messages/:messageId
+ * @desc    Get status of a specific message
+ * @access  Public (or Protected with API key)
+ */
+router.get("/:messageId", messageController.getMessageStatus);
+
+/**
+ * @route   DELETE /api/messages/:messageId
+ * @desc    Delete a specific message
+ * @access  Public (or Protected with API key)
+ */
+router.delete("/:messageId", messageController.deleteMessage);
 
 module.exports = router;

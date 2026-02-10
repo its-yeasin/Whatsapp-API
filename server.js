@@ -12,7 +12,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Trust proxy - Required when behind nginx/reverse proxy
-app.set('trust proxy', 1);
+app.set("trust proxy", 1);
 
 // Initialize Firebase
 initializeFirebase();
@@ -26,6 +26,12 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization", "X-API-Key"],
   }),
 );
+
+// Request logging middleware (development/debugging)
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  next();
+});
 
 // Body Parser
 app.use(express.json());
@@ -68,10 +74,12 @@ app.use("/api/stats", statsRoutes);
 
 // 404 Handler
 app.use((req, res) => {
+  console.log(`[404] ${req.method} ${req.path} - Endpoint not found`);
   res.status(404).json({
     success: false,
     error: "Endpoint not found",
     path: req.path,
+    method: req.method,
   });
 });
 
