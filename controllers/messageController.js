@@ -2,46 +2,6 @@ const { validationResult } = require("express-validator");
 const { getMessagesRef } = require("../config/firebase");
 
 /**
- * Write to Firebase with retry logic (async, non-blocking)
- */
-async function writeToFirebaseWithRetry(ref, data, messageId) {
-  const maxRetries = 3;
-
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      // 5 second timeout per attempt
-      const writeTimeout = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Write timeout")), 5000);
-      });
-
-      await Promise.race([ref.set(data), writeTimeout]);
-
-      console.log(`✅ Message ${messageId} written to Firebase successfully`);
-      return true;
-    } catch (error) {
-      console.error(
-        `❌ Firebase write attempt ${attempt + 1}/${maxRetries + 1} failed:`,
-        error.message,
-      );
-
-      if (attempt < maxRetries) {
-        // Wait before retry (exponential backoff)
-        await new Promise((resolve) =>
-          setTimeout(resolve, Math.pow(2, attempt) * 1000),
-        );
-      } else {
-        console.error(
-          `❌ All retries exhausted for message ${messageId}. Firebase may be unreachable.`,
-        );
-        console.error(`   Data:`, JSON.stringify(data));
-        // TODO: Implement fallback strategy (e.g., write to local queue/database)
-        return false;
-      }
-    }
-  }
-}
-
-/**
  * Send a single WhatsApp message
  */
 exports.sendMessage = async (req, res) => {
@@ -60,7 +20,7 @@ exports.sendMessage = async (req, res) => {
     // Clean phone number
     const cleanPhone = phoneNumber.replace(/\D/g, "");
 
-    // Create message data
+    // Create message in Firebase
     const messagesRef = getMessagesRef();
     const newMessageRef = messagesRef.push();
 
@@ -72,31 +32,40 @@ exports.sendMessage = async (req, res) => {
       source: "api",
     };
 
-    const messageId = newMessageRef.key;
+    await newMessageRef.set(messageData);
 
-    // Send immediate response - don't block on Firebase write
+    // Listen for status updates (optional - for immediate feedback)
+    const statusPromise = new Promise((resolve) => {
+      const timeout = setTimeout(() => {
+        newMessageRef.off("value");
+        resolve({ status: "queued", timeout: true });
+      }, 5000);
+
+      newMessageRef.on("value", (snapshot) => {
+        const data = snapshot.val();
+        if (data && data.status !== "pending") {
+          clearTimeout(timeout);
+          newMessageRef.off("value");
+          resolve(data);
+        }
+      });
+    });
+
     res.status(201).json({
       success: true,
       message: "Message queued successfully",
       data: {
-        messageId: messageId,
+        messageId: newMessageRef.key,
         phoneNumber: messageData.phoneNumber,
         status: "pending",
         createdAt: messageData.createdAt,
       },
     });
-
-    // Write to Firebase asynchronously (non-blocking)
-    setImmediate(() => {
-      writeToFirebaseWithRetry(newMessageRef, messageData, messageId);
-    });
   } catch (error) {
     console.error("Error sending message:", error);
-    console.error("Error stack:", error.stack);
     res.status(500).json({
       success: false,
       error: error.message || "Failed to send message",
-      details: process.env.NODE_ENV === "development" ? error.stack : undefined,
     });
   }
 };
