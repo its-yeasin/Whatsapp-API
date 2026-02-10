@@ -11,6 +11,9 @@ const { initializeFirebase } = require("./config/firebase");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust proxy - Required when behind nginx/reverse proxy
+app.set('trust proxy', 1);
+
 // Initialize Firebase
 initializeFirebase();
 
