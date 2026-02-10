@@ -25,12 +25,12 @@ router.post(
   "/send",
   [
     body("phoneNumber")
-      .notEmpty()
-      .withMessage("Phone number is required")
+      .optional()
       .isString()
       .withMessage("Phone number must be a string")
       .matches(/^[\+]?[0-9]{10,15}$/)
       .withMessage("Invalid phone number format. Include country code."),
+    body("url").optional().isString().withMessage("URL must be a string"),
     body("message")
       .notEmpty()
       .withMessage("Message is required")
