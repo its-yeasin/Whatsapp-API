@@ -15,22 +15,31 @@ exports.sendMessage = async (req, res) => {
       });
     }
 
-    const { phoneNumber, message } = req.body;
-
-    // Clean phone number
-    const cleanPhone = phoneNumber.replace(/\D/g, "");
+    const { phoneNumber, message, url } = req.body;
 
     // Create message in Firebase
     const messagesRef = getMessagesRef();
     const newMessageRef = messagesRef.push();
 
     const messageData = {
-      phoneNumber: cleanPhone.startsWith("+") ? cleanPhone : "+" + cleanPhone,
       message: message,
       status: "pending",
       createdAt: Date.now(),
       source: "api",
     };
+
+    // Add phoneNumber if provided
+    if (phoneNumber) {
+      const cleanPhone = phoneNumber.replace(/\D/g, "");
+      messageData.phoneNumber = cleanPhone.startsWith("+")
+        ? cleanPhone
+        : "+" + cleanPhone;
+    }
+
+    // Add url if provided
+    if (url) {
+      messageData.url = url;
+    }
 
     await newMessageRef.set(messageData);
 
@@ -56,7 +65,10 @@ exports.sendMessage = async (req, res) => {
       message: "Message queued successfully",
       data: {
         messageId: newMessageRef.key,
-        phoneNumber: messageData.phoneNumber,
+        ...(messageData.phoneNumber && {
+          phoneNumber: messageData.phoneNumber,
+        }),
+        ...(messageData.url && { url: messageData.url }),
         status: "pending",
         createdAt: messageData.createdAt,
       },
